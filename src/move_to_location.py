@@ -51,7 +51,7 @@ if __name__=='__main__':
 	
 	#Defines parameters that ultimately get fed to our move function
 	zumy = sys.argv[1]
-	goal_state = {'x': 1, 'y': 1, 'theta': 0}
+	goal_state = {'x': 0.5, 'y': 0.5, 'theta': 0}
 
 	#Subscribes to the zumy_position topic created by Haoyu's code
 	rospy.Subscriber('zumy_position', ZumyCoord, move, [goal_state, zumy])

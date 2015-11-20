@@ -2,9 +2,10 @@ import math
 import config
 import matplotlib.pyplot as plt
 import time
+from geometry_msgs.msg import Pose2D
 
 def e_dist(del_x, del_y):
-	return (del_x*del_x + del_y*del_y)
+	return math.sqrt(del_x*del_x + del_y*del_y)
 
 # def plotter(rbt_state, rbt_goal_state):
 # 	plt.cla()
@@ -41,14 +42,15 @@ def e_dist(del_x, del_y):
 
 
 def getCmdVel(state, goal):
-	del_x_world = goal['x'] - state['x']
-	del_y_world	= goal['y'] - state['y']
+	del_x_world = goal.x - state.x
+	del_y_world	= goal.y - state.y
+	is_goal_reached = False
 
 	print('distance_from_goal = %f' % e_dist(del_x_world, del_y_world))
 
 	# Are we close enough to the goal that we can just fix orientation?
 	if e_dist(del_x_world, del_y_world) < config.distThresh:
-		desired_heading = goal['theta']
+		desired_heading = goal.theta
 		nearGoalPt = 1
 	else:
 		desired_heading = math.atan2(del_y_world, del_x_world)
@@ -56,7 +58,7 @@ def getCmdVel(state, goal):
 		nearGoalPt = 0
 
 	# Compute difference in desired and current heading.  Cast to [-PI,PI].
-	del_heading = desired_heading - state['theta']
+	del_heading = desired_heading - state.theta
 	print('del_heading = %f' % del_heading)
 	if del_heading > 180:
 		del_heading = del_heading - 360
@@ -74,6 +76,7 @@ def getCmdVel(state, goal):
 				lin_x = 0
 				ang_z = 0
 				print 'CASE 1'
+				is_goal_reached = True
 			elif del_heading > 25:
 				lin_x = 0
 				ang_z = config.maxTurnSpd
@@ -102,7 +105,7 @@ def getCmdVel(state, goal):
 	else:
 		# Drive and turn at the same time.  Linear velocity scales with the amount of the distance along the robot's x-axis.
 		# Angular velocity scales with the amount of the distance along the robot's y-axis (that we can't cover without turning).
-		theta_rad = math.radians(state['theta'])
+		theta_rad = math.radians(state.theta)
 		del_x_robot = del_x_world * math.cos(theta_rad) + del_y_world * math.sin(theta_rad)
 		del_y_robot = -del_x_world * math.sin(theta_rad) + del_y_world * math.cos(theta_rad)
 		lin_x = config.maxFwdSpd * del_x_robot/e_dist(del_x_robot, del_y_robot)
@@ -121,7 +124,7 @@ def getCmdVel(state, goal):
 		else:
 			ang_z = -config.maxTurnSpd
 
-	return {'lin_x': lin_x, 'ang_z': ang_z}
+	return ({'lin_x': lin_x, 'ang_z': ang_z}, is_goal_reached)
 	
 # def fake_robot_dynamics(state, cmd_vel):
 # 	# this would just be a publish command for the actual Zumy
