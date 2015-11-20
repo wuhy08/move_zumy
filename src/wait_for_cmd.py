@@ -20,6 +20,7 @@ class MoveZumy:
 		self.rate = rospy.Rate(10)
 		self.goal = self.position
 		self.goal_flag = True
+		self.counter = 0
 		self.vel_pub = rospy.Publisher('/%s/cmd_vel' % self.name, Twist, queue_size=2)
 		#self.pos_tf_pub = rospy.Publisher('/tf', TFMessage,queue_size=2)
 		rospy.Service('/'+self.name+'/zumy_tracking', Mov2LocSrv, self.move)
@@ -31,7 +32,7 @@ class MoveZumy:
 		rospy.spin()
 	def getPos(self, msg):
 		self.position = msg.position
-		print self.position
+		#print self.position
 
 	# def pubTFPos(self):
 	# 	counter = 0
@@ -58,10 +59,17 @@ class MoveZumy:
 		#Expose variables from subscriber line
 		self.goal = request.goal
 		self.goal_flag = False
+		self.counter = 0
+		
+		cmd = Twist()	
+		cmd.linear.y = 0
+		cmd.linear.z = 0
+		cmd.angular.x = 0
+		cmd.angular.y = 0
 
 		#Creating a new current state based on the information from Haoyu's code		
 		#Plugging the information from Haoyu's code into Vijay's getCmdVel function to calculate v_x and omega_z
-		while not self.goal_flag:
+		while self.counter<5:
 			#self.pubTFPos()
 
 			(vel, self.goal_flag) = get_vel.getCmdVel(self.position, self.goal)
@@ -69,18 +77,15 @@ class MoveZumy:
 		#Creating the ability to publish to the zumy
 
 		#Creating the message type to publish to the zumy (information from vel)
-			cmd = Twist()
-			
-			cmd.linear.y = 0
-			cmd.linear.z = 0
-			cmd.angular.x = 0
-			cmd.angular.y = 0
+
 			if not self.goal_flag:
 				cmd.angular.z = vel['ang_z']
 				cmd.linear.x = vel['lin_x']
+				self.counter = 0
 			else:
 				cmd.angular.z = 0
 				cmd.linear.x = 0
+				self.counter = self.counter + 1
 
 			#Publish new velocity information to the zumy
 			self.vel_pub.publish(cmd)
